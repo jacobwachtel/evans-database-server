@@ -5,10 +5,19 @@ const app = express();
 const router = express.Router();
 const connectDB = require('./db/connect')
 const ObjectId = require('mongodb').ObjectId;
-const Tool = require('./models/Schema')
+const Tool = require('./models/Schema');
+const s3Connection = require('./aws/connection')
+
+
+
+
 
 
 app.use(express.json());
+app.use(function (req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+});
 
 app.get('/api/v1/tools', (req, res) => {
 
