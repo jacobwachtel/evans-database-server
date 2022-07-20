@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { MongoClient } = require('mongodb');
 const Db = process.env.MONGO_URI
 
+var _db;
 
 mongoose.connect(
     Db,
@@ -10,21 +11,6 @@ mongoose.connect(
     useUnifiedTopology: true,
   }
 );
-
-  var _db;
-
-// const APIConnection = "mongodb+srv://jacobwachtel:Wookiewookie1@evans-db-cluster.3dayq.mongodb.net/?retryWrites=true&w=majority"
-
-
-// const connectDB = (APIConnection) => {
-//     return mongoose.connect(APIConnection, {
-//        useNewUrlParser: true,
-//        useCreateIndex: true,
-//        useFindAndModify: false,
-//        useUnifiedTopology: true,
-//     });
-//  };
- 
    
   const connectDB = {
     connectToServer: function (callback) {
