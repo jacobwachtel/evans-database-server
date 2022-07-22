@@ -12,6 +12,9 @@ const ToolSchema = new mongoose.Schema({
         required: [true, 'must provide a description'],
         maxLength: [150, 'Cannot be longer than 150 characters'],
     },
+    image: {
+        type: String,
+    },
     owner: {
         type: String,
         required: [true, 'must provide an owner'],
