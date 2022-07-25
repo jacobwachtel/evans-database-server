@@ -46,9 +46,6 @@ app.get('/api/v1/tools', (req, res) => {
     })
 })
 
-// Delete tool from DB
-
-
 // Get a single tool from DB
 
 app.get('/api/v1/tools/:id', async(req, res) => {
@@ -76,15 +73,25 @@ app.patch('/api/v1/tools/:id', async (req,res) => {
             runValidators: true,
         })
         console.log("tool", tool);
-        // res.send(tool);
 
         if(!tool) {
             res.status(401).send("no task was found")
         }
-        console.log("This worked!");
         res.status(200).send(tool);
 })
 
+// Delete tool from DB
+
+app.delete('/api/v1/tools/:id', async (req, res) => {
+    const { id: TaskID } = req.params;
+
+    const tool = await Tool.findOneAndDelete({ _id: ObjectId(TaskID) });
+
+    if(!tool) {
+        res.status(401).send("no task was found")
+    }
+    res.status(200).send(tool);
+})
 
 const start = async () => {
     try {
