@@ -23,7 +23,7 @@ app.use(express.static('public'))
 app.use(upload.none());
 
 
-// Creates a New Tool
+// Creates a New Tool on DB
 app.post('/api/v1/tools', (req, res) => {
 
     const formData = req.body
@@ -46,6 +46,44 @@ app.get('/api/v1/tools', (req, res) => {
     })
 })
 
+// Delete tool from DB
+
+
+// Get a single tool from DB
+
+app.get('/api/v1/tools/:id', async(req, res) => {
+    const {id: TaskID} = req.params;
+
+    
+    const tool = await Tool.findOne({ _id: ObjectId(TaskID)})
+    
+    if(!tool) {
+        res.status(401).send("Tool does not exist!")
+    }
+    console.log("This worked!");
+    res.status(200).send({tool})
+})
+
+// Update tool on DB
+
+app.patch('/api/v1/tools/:id', async (req,res) => {
+
+        const { id: TaskID } = req.params;
+        console.log(req.body);
+
+        const tool = await Tool.findOneAndUpdate({ _id: ObjectId(TaskID) }, req.body, {
+            new: true,
+            runValidators: true,
+        })
+        console.log("tool", tool);
+        // res.send(tool);
+
+        if(!tool) {
+            res.status(401).send("no task was found")
+        }
+        console.log("This worked!");
+        res.status(200).send(tool);
+})
 
 
 const start = async () => {
