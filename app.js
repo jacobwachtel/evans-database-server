@@ -8,9 +8,12 @@ const ObjectId = require('mongodb').ObjectId;
 const Tool = require('./models/Schema');
 const s3Connection = require('./aws/connection')
 const multer = require('multer')
-const upload = multer();
 const MongoDB_URI = process.env.MONGO_URI
 const port = process.env.PORT || 8000
+const cors = require('cors');
+// const upload = multer({ storage: "https://api.cloudinary.com/v1_1/evans-db/image/upload"})
+const fileUpload = require('express-fileupload')
+const upload = multer({ storage: storage })
 
 
 app.use(function (req, res, next) {
@@ -19,16 +22,23 @@ app.use(function (req, res, next) {
 });
 
 app.use(express.json());
-app.use(express.static('public'))
-app.use(upload.none());
+// app.use(express.static('public'))
+// app.use(upload.none());
+app.use(cors());
+app.use(fileUpload({
+    createParentPath: true,
+}))
 
 
 // Creates a New Tool on DB
-app.post('/api/v1/tools', (req, res) => {
+app.post('/api/v1/tools', upload.single('image'),(req, res) => {
 
     const formData = req.body
-    const tool = Tool.create(formData)
-    res.status(201).json({ tool })
+
+    console.log(req.body, req.file);
+    res.send(req.body)
+    // const tool = Tool.create(formData)
+    // res.status(201).json({ tool })
 })
 
 // Gets all Tools from DB
