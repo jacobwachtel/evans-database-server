@@ -19,78 +19,45 @@ const fileUpload = require('express-fileupload')
 const bodyParser = require('body-parser');
 let streamifier = require('streamifier');
 // const uploadFromBuffer = require('./cloudinary/fileUploader');
-const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: {
-      fileSize: 5 * 1024 * 1024,
-    },
-  })
+// const upload = multer({
+//     storage: multer.memoryStorage(),
+//     limits: {
+//       fileSize: 5 * 1024 * 1024,
+//     },
+//   })
 
-  cloudinary.config({
-    cloud_name: "evans-db.mo.cloudinary.net",
-    api_key: "239494999359417",
-    api_secret: "gWCpUZXCx1sknd9Wz8G1nQQLvh8",
-    secure: true
-  });
-
-  const bufferToStream = (buffer) => {
-    const readable = new Readable({
-        read() {
-            this.push(buffer);
-            this.push(null)
-        }
-    })
-    return readable;
-  }
-
+const upload = multer();
 
 app.use(function (req, res, next) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     next();
 });
 
-// app.use(bodyParser.urlencoded({ extended: true }))
-// app.use(bodyParser.json());
-// app.use(express.json());
-// app.use(express.static('public'))
-// app.use(upload.none());
 app.use(cors());
-// app.use(fileUpload({
-//     createParentPath: true,
-// }))
+
 
 
 // Creates a New Tool on DB
-app.post('/api/v1/tools', upload.single('image'),(req, res) => {
+app.post('/api/v1/tools/', upload.none(), (req, res) => {
 
     const formData = req.body
 
-    // console.log(formData, req.file);
-    res.send(req.body)
+    // console.log(formData);
+    // console.log('"************"')
+    // console.log(req.headers)
+    // console.log('"************"')
+    console.log(req.body)
+    // res.send(req.body)
     
-    const stream = cloudinary.uploader.upload_stream(
-        { folder: 'Pictures' },
-        (err, result) => {
-            if(err) return console.error(err);
-           
-        }
-    );
-    streamifier.createReadStream(req.file.buffer).pipe(stream);
-    // const uploadImage = async (rq.file)
-
-    // function cloudinaryDone(error, result) {
-    //     if (error) {
-    //      console.log("Error in cloudinary.uploader.upload_stream\n", error);
-    //      return;
-    //     }
-
-    // }
-    // const tool = Tool.create(formData)
-    // res.status(201).json({ tool })
+      
+    const tool = Tool.create(formData)
+    res.status(201).json({ tool })
+    res.send('tool hit the server...')
 })
 
+
 // Gets all Tools from DB
-app.get('/api/v1/tools', (req, res) => {
+app.get('/api/v1/tools/', (req, res) => {
 
     Tool.find({}, (err, found) => {
         if (err) {
@@ -98,6 +65,7 @@ app.get('/api/v1/tools', (req, res) => {
             return res.send("no data found");
         }
         if (found) {
+            console.log('found!!!')
             res.status(200).send(found);
         }
         
