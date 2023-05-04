@@ -20,6 +20,7 @@
     "express-fileupload": "^1.4.0",
     "mongoose": "^6.4.5",
     "multer": "^1.4.5-lts.1",
+    "multer-s3": "^3.0.1",
     "stream": "^0.0.2",
     "streamifier": "^0.1.1"
   },

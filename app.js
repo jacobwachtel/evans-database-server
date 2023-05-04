@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const AWS = require('aws-sdk')
 const { TopologyClosedEvent } = require('mongodb');
 const fs = require('fs');
 const app = express();
@@ -9,6 +10,7 @@ const ObjectId = require('mongodb').ObjectId;
 const Tool = require('./models/Schema');
 const s3Connection = require('./aws/connection')
 const multer = require('multer')
+const multers3 = require('multer-s3')
 const { Readable } = require('stream');
 const MongoDB_URI = process.env.MONGO_URI
 const port = process.env.PORT || 8000
@@ -17,6 +19,8 @@ const cloudinary = require('cloudinary').v2;
 // const upload = multer({ storage: "https://api.cloudinary.com/v1_1/evans-db/image/upload"})
 const fileUpload = require('express-fileupload')
 const bodyParser = require('body-parser');
+const s3AndDynamoUpload = require('./lambdas/lambdas')
+const upload = require('./lambdas/imageUpload')
 let streamifier = require('streamifier');
 // const uploadFromBuffer = require('./cloudinary/fileUploader');
 // const upload = multer({
@@ -26,7 +30,7 @@ let streamifier = require('streamifier');
 //     },
 //   })
 
-const upload = multer();
+
 
 app.use(function (req, res, next) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -38,15 +42,15 @@ app.use(cors());
 
 
 // Creates a New Tool on DB
-app.post('/api/v1/tools/', upload.none(), (req, res) => {
+app.post('/api/v1/tools/', upload.single('image'), async (req, res) => {
 
     const formData = req.body
-
+    const imageUrl = req.file.location
     // console.log(formData);
     // console.log('"************"')
     // console.log(req.headers)
     // console.log('"************"')
-    console.log(req.body)
+    console.log(formData, '---', imageUrl)
     // res.send(req.body)
     
       
