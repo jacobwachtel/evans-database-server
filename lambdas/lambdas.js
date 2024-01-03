@@ -5,14 +5,14 @@ export const s3AndDynamoUpload = exports.handler = async (event) => {
     const formData = event.formdata;
 
     const s3Params = {
-        Bucket: 'my-bucket',
+        Bucket: '<my-bucket>',
         Key: file.key
     };
 
     const s3Url = "<AWS URL>"
 
     const dynamoDBParams = {
-        TableName: 'my-dynamo-table',
+        TableName: "<'my-dynamo-table'>",
         Item: {
             name: formData.name,
             description: formData.description,

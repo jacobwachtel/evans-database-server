@@ -1,79 +1,112 @@
 require('dotenv').config();
 const express = require('express');
-const AWS = require('aws-sdk')
-const { TopologyClosedEvent } = require('mongodb');
 const fs = require('fs');
+const crypto = require('crypto');
 const app = express();
 const router = express.Router();
 const DbConnection = require('./db/connect')
 const ObjectId = require('mongodb').ObjectId;
 const Tool = require('./models/Schema');
-const s3Connection = require('./aws/connection')
+// const s3Connection = require('./aws/connection')
 const multer = require('multer')
 const multers3 = require('multer-s3')
-const { Readable } = require('stream');
 const MongoDB_URI = process.env.MONGO_URI
 const port = process.env.PORT || 8000
 const cors = require('cors');
-const cloudinary = require('cloudinary').v2;
-// const upload = multer({ storage: "https://api.cloudinary.com/v1_1/evans-db/image/upload"})
-const fileUpload = require('express-fileupload')
 const bodyParser = require('body-parser');
-const s3AndDynamoUpload = require('./lambdas/lambdas')
-const upload = require('./lambdas/imageUpload')
-let streamifier = require('streamifier');
-// const uploadFromBuffer = require('./cloudinary/fileUploader');
-// const upload = multer({
-//     storage: multer.memoryStorage(),
-//     limits: {
-//       fileSize: 5 * 1024 * 1024,
-//     },
-//   })
+// const s3AndDynamoUpload = require('./lambdas/lambdas')
+// const upload = require('./lambdas/imageUpload');
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
+const bucketName = process.env.BUCKET_NAME
+const bucketRegion = process.env.BUCKET_REGION
+const accessKey = process.env.ACCESS_KEY
+const secretAccessKey = process.env.SECRET_ACCESS_KEY
 
-app.use(function (req, res, next) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    next();
-});
+const s3 = new S3Client({
+    credentials: {
+        accessKeyId: accessKey,
+        secretAccessKey: secretAccessKey,
+    },
+    region: bucketRegion
+})
+
 
 app.use(cors());
 
-
+const generatedImageName = (bytes = 32) => crypto.randomBytes(bytes).toString('hex');
 
 // Creates a New Tool on DB
 app.post('/api/v1/tools/', upload.single('image'), async (req, res) => {
 
-    const formData = req.body
-    const imageUrl = req.file.location
-    // console.log(formData);
-    // console.log('"************"')
-    // console.log(req.headers)
-    // console.log('"************"')
-    console.log(formData, '---', imageUrl)
-    // res.send(req.body)
-    
+    // const buffer = await sharp(req.file.buffer).resize({height: 1920, width: 1080, fit: "contain"}).toBuffer
+
+    const params = {
+        Bucket: bucketName,
+        Key: generatedImageName(),
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype,
+    }
+
+    const command = new PutObjectCommand(params)
+    await s3.send(command, (err, data) => {
+        console.log(err, data);
+    })
+
+    const updatedFormData = {
+        ...req.body,
+        image: params.Key
+    }
       
-    const tool = Tool.create(formData)
+    const tool = Tool.create(updatedFormData)
     res.status(201).json({ tool })
-    res.send('tool hit the server...')
+    // res.send('tool hit the server...')
 })
 
 
 // Gets all Tools from DB
-app.get('/api/v1/tools/', (req, res) => {
+app.get('/api/v1/tools/', async (req, res) => {
 
-    Tool.find({}, (err, found) => {
-        if (err) {
-            console.log("ERROR!!!")
-            return res.send("no data found");
+    try {
+        const allTools = await Tool.find({})
+
+        if (!allTools || allTools.length === 0) {
+            return res.status(404).json({ error: 'No tools found' });
         }
-        if (found) {
-            console.log('found!!!')
-            res.status(200).send(found);
+
+        for (const tool of allTools) {
+            if (tool.image) {        
+                const getObjectParams = {
+                    Bucket: bucketName,
+                    Key: tool.image,
+                };
+            
+                const command = new GetObjectCommand(getObjectParams);
+                const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+            
+                // Update the imageUrl property in the 'tool' object
+                tool.image = url;
+            
+                console.log(tool);
+            } else {
+                console.log("No image found for tool:", tool);
+                // HANDLING NO IMAGE USE-CASE!!!!
+                // I plan to have a generic/default image....
+                // tool.image = 'defaultImageUrl';
+            }
         }
-        
-    })
+
+        res.status(200).send(allTools);
+
+    } catch (errors) {
+        console.error('Error fetching tools:', error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+    
 })
 
 // Get a single tool from DB
